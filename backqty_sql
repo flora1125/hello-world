@@ -1,0 +1,27 @@
+select cat1,a.totalMonth,a.supplierId,sum(a.backQty) as backQty,sum(iqcqty) as iqcQty
+    from (
+        select strleft(qualitytestfinishon,7) as totalMonth,a.sku_id as skuid,b.supplier_id as supplierId,
+                ifnull(a.co_ropy_back,0) + ifnull(a.co_other_back,0) as backQty,co_sign_in as iqcQty
+        from cets.order_consignmentdetail as a,cets.order_consignmentmaster as b
+        where a.co_billno = b.co_billno
+        and to_date(qualitytestfinishon) >= "2018-01-01"
+        and to_date(qualitytestfinishon) <= "2018-10-31"
+        and a.deleted = 0
+        and b.deleted = 0
+        union all
+        select strleft(qualitytestfinishon,7),b.sku_id as skuid, a.supplier_id, 
+                ifnull(b.returnponumber,0) + ifnull(b.returnproductsnumber,0),b.trueproductsnumber
+        from cets.ce_master as a,cets.ce_detail as b
+        where a.ce_billno = b.ce_billno
+        and to_date(qualitytestfinishon) >= "2018-01-01"
+        and to_date(qualitytestfinishon) <= "2018-10-31"
+        and a.deleted = 0
+        and a.deleted = 0
+    ) as a
+    left join 
+    (select skuid,cat_level_1 as cat1
+    from data_mart.sku_dimension
+    ) as t1
+    on a.skuid = t1.skuid
+    where strleft(a.skuid,3)<>'a18'
+    group by a.totalMonth,a.supplierId,cat1
